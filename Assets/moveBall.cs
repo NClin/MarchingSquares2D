@@ -12,11 +12,6 @@ public class moveBall : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
     }
 
-    private void OnCollisionEnter2D(Collision2D col)
-    {
-        Debug.Log("hit at " + transform.position);
-    }
-
     // Update is called once per frame
     void FixedUpdate()
     {

@@ -53,6 +53,7 @@ public class MarchingSquares
 {
     private MarchingPoint[,] grid;
 
+
     public MarchingSquares(float[,] values)
     {
         SetGrid(values);
@@ -137,27 +138,54 @@ public class MarchingSquares
         return total / 4;
     }
 
-    public MarchingPoint GetClosestPoint(Vector2 position, float threshold = 0)
+    public MarchingPoint GetClosestPoint(Vector2 position, float threshold = 0, int distanceToCheck = 3)
     {
         float minDist = float.MaxValue;
-        MarchingPoint closestPoint = new MarchingPoint(); 
-        foreach (var point in grid)
+        MarchingPoint closestPoint = new MarchingPoint();
+
+        int posxInt = (int)position.x;
+        int posyInt = (int)position.y;
+
+        if (distanceToCheck == 0)
+        // check all points
         {
-            if (point.Value < threshold) continue;
-            var dist = Vector2.Distance(position, point.gridPosition);
-            if (dist < minDist)
+            foreach (var point in grid)
             {
-                minDist = dist;
-                closestPoint = point;
+                if (point.Value < threshold) continue;
+                var dist = Vector2.Distance(position, point.gridPosition);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    closestPoint = point;
+                }
             }
         }
+        else 
+        // check only points known to be nearby
+        {
+            for (int x = posxInt - distanceToCheck; x < posxInt + distanceToCheck; x++)
+            {
+                if (x < 0 || x > grid.GetLength(0) - 1) continue;
 
+                for (int y = posyInt - distanceToCheck; y < posyInt + distanceToCheck; y++)
+                {
+                    if (y < 0 || y > grid.GetLength(1) - 1) continue;
+
+                    if (grid[x, y].Value < threshold) continue;
+                    var dist = Vector2.Distance(position, grid[x, y].gridPosition);
+                    if (dist < minDist)
+                    {
+                        minDist = dist;
+                        closestPoint = grid[x, y];
+                    }
+                }
+            }
+        }
         return closestPoint;
     }
 
     public MarchingPoint[] GetPointsInRadius(Vector2 position, float radius, float threshold = 0)
     {
-        float minDist = float.MaxValue;
         List<MarchingPoint> radiusPoints = new List<MarchingPoint>(); 
         foreach (var point in grid)
         {

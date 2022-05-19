@@ -5,14 +5,17 @@ using System.Management.Instrumentation;
 using JetBrains.Annotations;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 using Random = UnityEngine.Random;
 
 public class MarchingTiles : MonoBehaviour
 {   
+    // Parameters
     [SerializeField] private int xSize;
     [SerializeField] private int ySize;
     [SerializeField] private float threshold;
+    [SerializeField] private bool colorSquareByAverageValue = false;
+
+    // Prefabs
     [SerializeField] private GameObject marker;
     [SerializeField] private GameObject tileBase;
     [SerializeField] private GameObject tileSprite0000;
@@ -72,11 +75,13 @@ public class MarchingTiles : MonoBehaviour
 
     void PlaceMarker(Vector2 position, Color color)
     {
-        // -0.5 to make up for tile pivot being center.
+        // -0.5f compensates for tile pivot being center.
         Vector3 pos3 = new Vector3(position.x - 0.5f, position.y - 0.5f, 0);
         var toPlace = Instantiate(marker, pos3, quaternion.identity);
         toPlace.GetComponent<SpriteRenderer>().color = color;
     }
+
+
     
     Hashtable ConstructBaseRotationsHash()
     {
@@ -117,10 +122,14 @@ public class MarchingTiles : MonoBehaviour
         var square = marchingSquares.GetSquareFor(marchingPoint, threshold);
         var toPlace = GetTile(square);
         toPlace.transform.position = new Vector3(marchingPoint.x, marchingPoint.y, 0);
-        float averageVal = marchingSquares.GetSquareAverageValue(marchingPoint);
         toPlace.SetActive(true);
         placedTiles[marchingPoint.x, marchingPoint.y] = toPlace;
-        toPlace.GetComponentInChildren<SpriteRenderer>().color = Color.Lerp(Color.green, Color.red, averageVal);
+
+        if (colorSquareByAverageValue)
+        {
+            float averageVal = marchingSquares.GetSquareAverageValue(marchingPoint);
+            toPlace.GetComponentInChildren<SpriteRenderer>().color = Color.Lerp(Color.green, Color.red, averageVal);
+        }
     }
 
     void ClearTile(Vector2Int marchingPoint)
@@ -133,23 +142,6 @@ public class MarchingTiles : MonoBehaviour
         }
     }
 
-    ///
-    /// Here is how retrieving the tile will work:
-    /// There is a hash of squares which includes one of two tiles and a rotation.
-    /// The tile is returned as a gameobject (ready to spawn, be a collider, etc).
-    /// Then I can make properties and scripts on the tile as a prefab, and build
-    /// an architecture around that.
-    ///
-
-    // dictionary will contain each configuration, corresponding tile, and rotation.
-
-    // e.g.:
-
-    // key: 0100, value: 01001
-    // means - key 0100 gets 0100 with one 90 degree clockwise rotation.
-
-    // this determines the sprite and collider?
-
     private Hashtable ConstructTilesHash()
     {
         var outHash = new Hashtable();
@@ -158,12 +150,12 @@ public class MarchingTiles : MonoBehaviour
         outHash.Add("0010", "10002");
         outHash.Add("0011", "10013");
         outHash.Add("0100", "10001");
-        outHash.Add("0101", "01010"); // Diagonal. controversial. Perhaps make a rotation of each other.
+        outHash.Add("0101", "01010"); // Diagonals may need reconfiguration.
         outHash.Add("0110", "10012");
         outHash.Add("0111", "01110");
         outHash.Add("1000", "10000");
         outHash.Add("1001", "10010");
-        outHash.Add("1010", "10100"); // Diagonal. controversial.
+        outHash.Add("1010", "10100"); // Diagonal. Controversial.
         outHash.Add("1011", "01111");
         outHash.Add("1100", "10011");
         outHash.Add("1101", "01112");
@@ -182,10 +174,7 @@ public class MarchingTiles : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D col)
     {
-        Debug.Log("collision");
-        
         SetClosestMarchingPoint(col.transform.position, 0, 0.5f);
-        UpdateAllTiles();
-        
+        UpdateAllTiles();        
     }
 }
